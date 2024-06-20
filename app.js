@@ -1,6 +1,7 @@
 const express = require('express');
 const morgan = require('morgan');
 const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const cors = require('cors');
 
 require('dotenv').config();
@@ -21,6 +22,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 app.use(helmet());
 app.use(cors());
+
+// _________________ Rate Limiting _________________
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+})
+
+app.use(limiter);
 
 // _________________ Routes _________________
 
