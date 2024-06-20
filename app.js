@@ -7,6 +7,7 @@ require('dotenv').config();
 
 
 // _________________ Database _________________
+require('./db/mongoDB');
 
 // _________________ Environment Variables _________________
 const PORT = process.env.PORT || 5000;
