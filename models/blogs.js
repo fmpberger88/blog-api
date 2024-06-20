@@ -15,15 +15,16 @@ const blogSchema = new mongoose.Schema({
         minLength: [10, 'Content must be at lest 10 characters']
     },
     author: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
         required: [true, 'Author is required'],
-        trim: true,
-        lowercase: true,
     },
     comments: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Comment'
     }]
+}, {
+    timestamps: true
 })
 
 const Blog = mongoose.model('Blog', blogSchema)
