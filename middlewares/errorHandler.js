@@ -1,6 +1,6 @@
 // errorHandler.js
 
-function errorHandler(err, req, res) {
+function errorHandler(err, req, res, next) {
     console.error(err.stack); // Log error to console; consider using a more advanced logging solution for production
 
     const errorResponse = {
