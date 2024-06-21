@@ -22,7 +22,15 @@ const blogSchema = new mongoose.Schema({
     comments: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Comment'
-    }]
+    }],
+    views: {
+        type: Number,
+        default: 0
+    },
+    isPublished: {
+        type: Boolean,
+        default: false
+    }
 }, {
     timestamps: true
 })
