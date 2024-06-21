@@ -23,7 +23,7 @@ require('./middlewares/passport');
 // _________________ Middlewares _________________
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(passport.initialize); // Not sure wether required?
+// app.use(passport.initialize); // Not sure wether required?
 app.use(morgan('dev'));
 app.use(helmet());
 app.use(cors());
