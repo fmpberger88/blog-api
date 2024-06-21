@@ -1,5 +1,6 @@
 const express = require('express');
 const Comments = require('../models/Comments');
+const Blog = require('../models/blogs');
 const { body, validationResult } = require('express-validator');
 const passport = require('passport');
 
@@ -22,23 +23,23 @@ commentRouter.param('commentId', async (req, res, next, id) => {
         req.comment = comment;
         next();
     } catch (err) {
-        next(err)
+        next(err);
     }
 });
 
 // Param middleware for blogId
 commentRouter.param('blogId', async (req, res, next, id) => {
     try {
-        const comments = await Comments.find({ blog: id });
-        if (!comments.length) {
-            res.status(404).send('No comments found for this blog');
+        const blog = await Blog.findById(id).populate('comments');
+        if (!blog) {
+            return res.status(404).send('Blog not found');
         }
-        req.comments = comments;
+        req.blog = blog;
         next();
     } catch (err) {
         next(err);
     }
-})
+});
 
 // GET - Get all comments for a specific blog
 /**
@@ -69,8 +70,12 @@ commentRouter.param('blogId', async (req, res, next, id) => {
  *       500:
  *         description: Internal server error.
  */
-commentRouter.get('/:blogId', (req, res) => {
-    res.json(req.comments);  // Use pre-loaded comments
+commentRouter.get('/:blogId', async (req, res, next) => {
+    try {
+        res.json(req.blog.comments);
+    } catch (err) {
+        next(err);
+    }
 });
 
 // POST - Post a comment to a blog
@@ -81,8 +86,6 @@ commentRouter.get('/:blogId', (req, res) => {
  *     tags: [Comment]
  *     summary: Post a comment to a blog
  *     description: Adds a new comment to the specified blog.
- *     security:
- *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: blogId
@@ -105,11 +108,9 @@ commentRouter.get('/:blogId', (req, res) => {
  *         description: Internal server error.
  */
 commentRouter.post('/:blogId', passport.authenticate('jwt', { session: false }), [
-    body('text').trim().isLength({ min: 1 }).withMessage('Comment text must not be empty'),
-    body('author').notEmpty().withMessage('Author ID is required')
-], async (req, res) => {
+    body('text').trim().isLength({ min: 1 }).withMessage('Comment text must not be empty')
+], async (req, res, next) => {
     const errors = validationResult(req);
-
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
@@ -120,10 +121,15 @@ commentRouter.post('/:blogId', passport.authenticate('jwt', { session: false }),
             author: req.user._id,
             blog: req.params.blogId
         });
+
         await newComment.save();
+
+        req.blog.comments.push(newComment._id);
+        await req.blog.save();
+
         res.status(201).json(newComment);
     } catch (err) {
-        res.status(500).send("Server error");
+        next(err);
     }
 });
 
@@ -135,8 +141,6 @@ commentRouter.post('/:blogId', passport.authenticate('jwt', { session: false }),
  *     tags: [Comment]
  *     summary: Delete a comment
  *     description: Deletes a comment based on the comment ID.
- *     security:
- *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: commentId
@@ -152,17 +156,22 @@ commentRouter.post('/:blogId', passport.authenticate('jwt', { session: false }),
  *       500:
  *         description: Internal server error.
  */
-commentRouter.delete('/:commentId', passport.authenticate('jwt', { session: false }), async (req, res) => {
+commentRouter.delete('/:commentId', passport.authenticate('jwt', { session: false }), async (req, res, next) => {
     try {
         // Check if the logged-in user is the author of the comment
         if (req.comment.author.toString() !== req.user._id.toString()) {
             return res.status(403).json({ message: 'Unauthorized' });
         }
 
-        await req.comment.remove();
+        // Remove the comment from the database
+        await Comments.deleteOne({ _id: req.comment._id });
+
+        // Remove the comment from the blog's comments array
+        await Blog.updateOne({ _id: req.comment.blog }, { $pull: { comments: req.comment._id } });
+
         res.send('Comment deleted successfully');
     } catch (err) {
-        res.status(500).send("Server error");
+        next(err);
     }
 });
 
@@ -189,8 +198,5 @@ commentRouter.delete('/:commentId', passport.authenticate('jwt', { session: fals
  *         text: "This is a great blog post!"
  *         author: 507f1f77bcf86cd799439011
  */
-
-
-
 
 module.exports = commentRouter;
