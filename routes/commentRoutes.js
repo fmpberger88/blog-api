@@ -1,6 +1,7 @@
 const express = require('express');
 const Comments = require('../models/Comments');
 const { body, validationResult } = require('express-validator');
+const passport = require('passport');
 
 const commentRouter = express.Router();
 
@@ -80,6 +81,8 @@ commentRouter.get('/:blogId', (req, res) => {
  *     tags: [Comment]
  *     summary: Post a comment to a blog
  *     description: Adds a new comment to the specified blog.
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: blogId
@@ -101,11 +104,12 @@ commentRouter.get('/:blogId', (req, res) => {
  *       500:
  *         description: Internal server error.
  */
-commentRouter.post('/:blogId', [
+commentRouter.post('/:blogId', passport.authenticate('jwt', { session: false }), [
     body('text').trim().isLength({ min: 1 }).withMessage('Comment text must not be empty'),
     body('author').notEmpty().withMessage('Author ID is required')
 ], async (req, res) => {
     const errors = validationResult(req);
+
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
@@ -113,7 +117,7 @@ commentRouter.post('/:blogId', [
     try {
         const newComment = new Comments({
             text: req.body.text,
-            author: req.body.author,
+            author: req.user._id,
             blog: req.params.blogId
         });
         await newComment.save();
@@ -131,6 +135,8 @@ commentRouter.post('/:blogId', [
  *     tags: [Comment]
  *     summary: Delete a comment
  *     description: Deletes a comment based on the comment ID.
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: commentId
@@ -146,10 +152,14 @@ commentRouter.post('/:blogId', [
  *       500:
  *         description: Internal server error.
  */
-commentRouter.delete('/:commentId', (req, res) => {
+commentRouter.delete('/:commentId', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
-        // The comment is already loaded and attached to the request
-        req.comment.remove();
+        // Check if the logged-in user is the author of the comment
+        if (req.comment.author.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+
+        await req.comment.remove();
         res.send('Comment deleted successfully');
     } catch (err) {
         res.status(500).send("Server error");

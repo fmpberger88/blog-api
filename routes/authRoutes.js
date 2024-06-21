@@ -6,7 +6,49 @@ const User = require('../models/users');
 
 const authRouter = express.Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: Auth
+ *   description: User authentication and registration
+ */
+
 // Registration
+/**
+ * @swagger
+ * /api/v1/register:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Register a new user
+ *     description: Register a new user with username, email, and password.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - email
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *                 format: password
+ *             example:
+ *               username: johndoe
+ *               email: johndoe@example.com
+ *               password: strongpassword
+ *     responses:
+ *       200:
+ *         description: Registration successful
+ *       400:
+ *         description: Validation error
+ */
 authRouter.post('/register', [
     body('username')
         .trim()
@@ -31,6 +73,46 @@ authRouter.post('/register', [
 });
 
 // Login
+/**
+ * @swagger
+ * /api/v1/login:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Login a user
+ *     description: Authenticate a user and return a JWT token.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *                 format: password
+ *             example:
+ *               email: johndoe@example.com
+ *               password: strongpassword
+ *     responses:
+ *       200:
+ *         description: Authentication successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Invalid credentials
+ */
 authRouter.post('/login', [
     body('email')
         .isEmail()
@@ -55,10 +137,5 @@ authRouter.post('/login', [
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.json({ token });
 })
-
-// Example protected Route
-authRouter.get('/protected', passport.authenticate('jwt', { session: false }), (req, res) => {
-    res.send(`Hello, ${req.user.username}`);
-});
 
 module.exports = authRouter;

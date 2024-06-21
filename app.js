@@ -31,11 +31,26 @@ const swaggerOptions = {
             version: '1.0.0',
             description: 'This is a simple API for managing blogs, comments, and users',
         },
+        components: {
+            securitySchemes: {
+                BearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT',
+                },
+            },
+        },
+        security: [
+            {
+                BearerAuth: [],
+            },
+        ],
     },
     apis: ['./routes/*.js'],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
 
 // _________________ Express App _____________
 const app = express();
