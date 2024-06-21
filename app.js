@@ -7,6 +7,7 @@ const passport = require('passport');
 require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
+const blogRoutes = require('./routes/blogRoutes');
 
 // _________________ Database _________________
 require('./db/mongoDB');
@@ -37,7 +38,8 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // _________________ Routes _________________
-app.use('/api/v1/', authRoutes)
+app.use('/api/v1/', authRoutes);
+app.use('/api/v1/blogs', blogRoutes);
 
 // _________________ Error Handler _________________
 
