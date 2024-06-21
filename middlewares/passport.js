@@ -7,16 +7,17 @@ const options = {
     secretOrKey: process.env.JWT_SECRET,
 }
 
-passport.use(new Strategy, async (jwt_payload, done) => {
+passport.use(new Strategy(options, async (jwt_payload, done) => {
     try {
-        const user = await User.findById(jwt_payload.id)
+        const user = await User.findById(jwt_payload.id);
         if (user) {
-            return done(null, user)
+            return done(null, user);
         }
         return done(null, false);
     } catch (error) {
-        return done(error)
+        return done(error);
     }
-});
+}));
+
 
 module.exports = passport;
