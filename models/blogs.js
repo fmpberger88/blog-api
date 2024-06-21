@@ -12,7 +12,7 @@ const blogSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Content is required'],
         trim: true,
-        minLength: [10, 'Content must be at lest 10 characters']
+        minLength: [10, 'Content must be at least 10 characters']
     },
     author: {
         type: mongoose.Schema.Types.ObjectId,
