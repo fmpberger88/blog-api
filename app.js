@@ -8,6 +8,9 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
 const blogRoutes = require('./routes/blogRoutes');
+const commentRouter = require('./routes/commentRoutes');
+
+const errorHandler = require('./middlewares/errorHandler');
 
 // _________________ Database _________________
 require('./db/mongoDB');
@@ -40,8 +43,10 @@ app.use(limiter);
 // _________________ Routes _________________
 app.use('/api/v1/', authRoutes);
 app.use('/api/v1/blogs', blogRoutes);
+app.use('/api/v1/comments', commentRouter);
 
 // _________________ Error Handler _________________
+app.use(errorHandler);
 
 // _________________ Server _________________
 app.listen(PORT, () => {
