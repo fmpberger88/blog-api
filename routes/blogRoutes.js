@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Blog = require('../models/blogs');
 const passport = require('passport');
+const upload = require('../middlewares/imageLoader');
 
 const blogRouter = express.Router();
 
@@ -113,7 +114,7 @@ blogRouter.get('/:id', async(req, res) => {
  *      500:
  *        description: Internal server error
  */
-blogRouter.post('/', passport.authenticate('jwt', { session: false }), [
+blogRouter.post('/', passport.authenticate('jwt', { session: false }), upload, [
     body('title')
         .trim()
         .notEmpty()
@@ -129,9 +130,10 @@ blogRouter.post('/', passport.authenticate('jwt', { session: false }), [
 
     const { title, content } = req.body;
     const author = req.user._id;
+    const image = req.file ? req.file.filenme : null;
 
     try {
-        const newBlog = new Blog({ title, content, author });
+        const newBlog = new Blog({ title, content, author, image });
         await newBlog.save();
         res.status(201).json(newBlog);
     } catch (err) {
@@ -170,7 +172,7 @@ blogRouter.post('/', passport.authenticate('jwt', { session: false }), [
  *      500:
  *        description: Internal server error
  */
-blogRouter.put('/:id', passport.authenticate('jwt', { session: false }), [
+blogRouter.put('/:id', passport.authenticate('jwt', { session: false }), upload, [
     body('title')
         .trim()
         .notEmpty()
@@ -186,6 +188,7 @@ blogRouter.put('/:id', passport.authenticate('jwt', { session: false }), [
     }
 
     const { title, content, isPublished } = req.body;
+    const image = req.file ? req.file.filename : req.body.image;
 
     try {
         const blog = await Blog.findById(req.params.id);
@@ -201,6 +204,7 @@ blogRouter.put('/:id', passport.authenticate('jwt', { session: false }), [
         blog.title = title;
         blog.content = content;
         blog.isPublished = isPublished;
+        blog.image = image;
         await blog.save();
 
         res.json(blog);
@@ -276,6 +280,9 @@ blogRouter.delete('/:id', passport.authenticate('jwt', { session: false }), asyn
  *         author:
  *           type: string
  *           description: Reference to the User who authored the blog post.
+ *         image:
+ *           type: string
+ *           format: binary
  *         comments:
  *           type: array
  *           items:
