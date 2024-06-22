@@ -1,5 +1,5 @@
 const express = require('express');
-const Comments = require('../models/Comments');
+const Comments = require('../models/comments');
 const Blog = require('../models/blogs');
 const { body, validationResult } = require('express-validator');
 const passport = require('passport');
