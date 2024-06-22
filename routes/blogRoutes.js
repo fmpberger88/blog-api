@@ -114,7 +114,7 @@ blogRouter.get('/:id', async(req, res) => {
  *      500:
  *        description: Internal server error
  */
-blogRouter.post('/', passport.authenticate('jwt', { session: false }), upload, [
+blogRouter.post('/', passport.authenticate('jwt', { session: false }), upload.single('image'), [
     body('title')
         .trim()
         .notEmpty()
@@ -172,7 +172,7 @@ blogRouter.post('/', passport.authenticate('jwt', { session: false }), upload, [
  *      500:
  *        description: Internal server error
  */
-blogRouter.put('/:id', passport.authenticate('jwt', { session: false }), upload, [
+blogRouter.put('/:id', passport.authenticate('jwt', { session: false }), upload.single('image'), [
     body('title')
         .trim()
         .notEmpty()
