@@ -107,7 +107,7 @@ commentRouter.get('/:blogId', async (req, res, next) => {
  *       500:
  *         description: Internal server error.
  */
-commentRouter.post('/:blogId', passport.authenticate('jwt', { session: false }), [
+commentRouter.post('/:blogId', [
     body('text').trim().isLength({ min: 1 }).withMessage('Comment text must not be empty')
 ], async (req, res, next) => {
     const errors = validationResult(req);
@@ -118,7 +118,6 @@ commentRouter.post('/:blogId', passport.authenticate('jwt', { session: false }),
     try {
         const newComment = new Comments({
             text: req.body.text,
-            author: req.user._id,
             blog: req.params.blogId
         });
 
@@ -183,20 +182,14 @@ commentRouter.delete('/:commentId', passport.authenticate('jwt', { session: fals
  *       type: object
  *       required:
  *         - text
- *         - author
  *       properties:
  *         text:
  *           type: string
  *           description: Content of the comment.
  *           minLength: 5
  *           trim: true
- *         author:
- *           type: string
- *           format: uuid
- *           description: The unique identifier for the user who authored the comment.
  *       example:
  *         text: "This is a great blog post!"
- *         author: 507f1f77bcf86cd799439011
  */
 
 module.exports = commentRouter;

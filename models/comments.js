@@ -8,11 +8,6 @@ const CommentSchema = new Schema({
         minlength: 5,
         trim:true
         },
-    author: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: [true, 'Author is required'],
-    }
 }, {
     timestamps: true
 });
