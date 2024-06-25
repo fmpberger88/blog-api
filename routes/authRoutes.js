@@ -154,7 +154,17 @@ authRouter.post('/login', [
 
     const payload = { id: user.id, email: user.email };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
+
+    res.json({
+        token,
+        user: {
+            id: user._id,
+            username: user.username,
+            first_name: user.first_name,
+            family_name: user.family_name,
+            email: user.email
+        }
+    });
 })
 
 module.exports = authRouter;
