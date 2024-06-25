@@ -33,7 +33,7 @@ const blogRouter = express.Router();
  *      500:
  *        description: Internal server error
  */
-blogRouter.get('/', async(req, res) => {
+blogRouter.get('/', async(req, res, next) => {
     try {
         const blogs = await Blog.find({ isPublished: true })
             .populate('author')
@@ -42,7 +42,42 @@ blogRouter.get('/', async(req, res) => {
 
         res.json(blogs);
     } catch (err) {
-        res.status(500).send("Server error");
+        next(err)
+    }
+});
+
+// GET - Read all blogs by the current user
+/**
+ * @swagger
+ * /api/v1/blogs/users-blogs:
+ *  get:
+ *    tags: [Blog]
+ *    summary: Retrieve all blogs by the current user
+ *    description: Get a list of all blogs created by the logged-in user, regardless of publish status.
+ *    security:
+ *      - BearerAuth: []
+ *    responses:
+ *      200:
+ *        description: A list of blogs.
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                $ref: '#/components/schemas/Blog'
+ *      500:
+ *        description: Internal server error
+ */
+blogRouter.get('/users-blogs', passport.authenticate('jwt', { session: false}), async(req, res, next) => {
+    try {
+        console.log(req.user._id.toString())
+        const blogs = await Blog.find({ author: req.user._id })
+            .populate('author')
+            .populate('comments')
+            .exec();
+        res.json(blogs);
+    } catch (err) {
+        next(err);
     }
 });
 
@@ -73,7 +108,7 @@ blogRouter.get('/', async(req, res) => {
  *      500:
  *        description: Internal server error
  */
-blogRouter.get('/:id', async(req, res) => {
+blogRouter.get('/:id', async(req, res, next) => {
     try {
         const blog = await Blog.findOneAndUpdate(
             { _id: req.params.id, isPublished: true},
@@ -90,9 +125,11 @@ blogRouter.get('/:id', async(req, res) => {
 
         res.json(blog);
     } catch(err) {
-        res.status(500).send("Server error");
+        next(err);
     }
-})
+});
+
+
 
 // POST - Create a new blog post
 /**
@@ -126,7 +163,7 @@ blogRouter.post('/', passport.authenticate('jwt', { session: false }), upload.si
     body('content')
         .isLength({ min: 10 })
         .withMessage('Content must be at least 10 characters')
-], async (req, res) => {
+], async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array()});
@@ -141,7 +178,55 @@ blogRouter.post('/', passport.authenticate('jwt', { session: false }), upload.si
         await newBlog.save();
         res.status(201).json(newBlog);
     } catch (err) {
-        res.status(500).send("Server error");
+        next(err);
+    }
+});
+
+// PUT - Publish a blog post
+/**
+ * @swagger
+ * /api/v1/blogs/{id}/publish:
+ *  put:
+ *    tags: [Blog]
+ *    summary: Publish a blog post
+ *    description: Update the publish status of an existing blog post by ID.
+ *    security:
+ *      - BearerAuth: []
+ *    parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
+ *        schema:
+ *          type: string
+ *        description: Unique ID of the blog to publish
+ *    responses:
+ *      200:
+ *        description: Blog post published successfully
+ *      403:
+ *        description: Unauthorized
+ *      404:
+ *        description: Blog not found
+ *      500:
+ *        description: Internal server error
+ */
+blogRouter.put('/:id/publish', passport.authenticate('jwt', { session: false }), async (req, res, next) => {
+    try {
+        const blog = await Blog.findById(req.params.id).exec();
+        if (!blog) {
+            return res.status(404).send('Blog not found or not published');
+        }
+
+        // Check if the logged-in user is the author of the blog
+        if (blog.author.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+
+        blog.isPublished = true;
+        await blog.save();
+        res.json(blog);
+
+    } catch (err) {
+        next(err);
     }
 });
 
@@ -185,7 +270,7 @@ blogRouter.put('/:id', passport.authenticate('jwt', { session: false }), upload.
         .isLength({ min: 10 })
         .withMessage('Content must be at least 10 characters')
         .escape()
-], async (req, res) => {
+], async (req, res, next) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -214,7 +299,7 @@ blogRouter.put('/:id', passport.authenticate('jwt', { session: false }), upload.
 
         res.json(blog);
     } catch (err) {
-        res.status(500).send("Server error");
+        next(err);
     }
 });
 
@@ -241,7 +326,7 @@ blogRouter.put('/:id', passport.authenticate('jwt', { session: false }), upload.
  *      500:
  *        description: Internal server error
  */
-blogRouter.delete('/:id', passport.authenticate('jwt', { session: false }), async (req, res) => {
+blogRouter.delete('/:id', passport.authenticate('jwt', { session: false }), async (req, res, next) => {
     try {
         const blog = await Blog.findById(req.params.id).exec();
         if (!blog) {
@@ -256,7 +341,7 @@ blogRouter.delete('/:id', passport.authenticate('jwt', { session: false }), asyn
         await Blog.deleteOne({ _id: req.params.id });
         res.send('Blog deleted successfully');
     } catch (err) {
-        res.status(500).json({ message: 'Server error', error: err.message });
+        next(err);
     }
 });
 
