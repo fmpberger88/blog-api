@@ -108,7 +108,11 @@ commentRouter.get('/:blogId', async (req, res, next) => {
  *         description: Internal server error.
  */
 commentRouter.post('/:blogId', [
-    body('text').trim().isLength({ min: 1 }).withMessage('Comment text must not be empty')
+    body('text')
+        .trim()
+        .isLength({ min: 1 })
+        .withMessage('Comment text must not be empty')
+        .escape()
 ], async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

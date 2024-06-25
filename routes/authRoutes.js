@@ -75,6 +75,7 @@ authRouter.post('/register', [
     body('password')
         .isLength({ min: 6 })
         .withMessage('Password must be at least 6 characters')
+        .escape()
 
 ],
     async (req, res) => {
@@ -137,6 +138,7 @@ authRouter.post('/login', [
     body('password')
         .notEmpty()
         .withMessage('Password is required')
+        .escape()
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

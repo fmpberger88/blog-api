@@ -122,10 +122,12 @@ blogRouter.post('/', passport.authenticate('jwt', { session: false }), upload.si
     body('title')
         .trim()
         .notEmpty()
-        .withMessage('Title is required'),
+        .withMessage('Title is required')
+        .escape(),
     body('content')
         .isLength({ min: 10 })
         .withMessage('Content must be at least 10 characters')
+        .escape()
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -180,10 +182,12 @@ blogRouter.put('/:id', passport.authenticate('jwt', { session: false }), upload.
     body('title')
         .trim()
         .notEmpty()
-        .withMessage('Title is required'),
+        .withMessage('Title is required')
+        .escape(),
     body('content')
         .isLength({ min: 10 })
         .withMessage('Content must be at least 10 characters')
+        .escape()
 ], async (req, res) => {
     const errors = validationResult(req);
 
