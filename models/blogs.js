@@ -9,10 +9,7 @@ const blogSchema = new mongoose.Schema({
        maxLength: [100, 'Title cannot be more than 100 characters']
     },
     content: {
-        type: String,
-        required: [true, 'Content is required'],
-        trim: true,
-        minLength: [10, 'Content must be at least 10 characters']
+        type: String
     },
     author: {
         type: mongoose.Schema.Types.ObjectId,

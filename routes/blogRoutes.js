@@ -122,12 +122,10 @@ blogRouter.post('/', passport.authenticate('jwt', { session: false }), upload.si
     body('title')
         .trim()
         .notEmpty()
-        .withMessage('Title is required')
-        .escape(),
+        .withMessage('Title is required'),
     body('content')
         .isLength({ min: 10 })
         .withMessage('Content must be at least 10 characters')
-        .escape()
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -136,7 +134,7 @@ blogRouter.post('/', passport.authenticate('jwt', { session: false }), upload.si
 
     const { title, content } = req.body;
     const author = req.user._id;
-    const image = req.file ? req.file.filenme : null;
+    const image = req.file ? req.file.path : null;
 
     try {
         const newBlog = new Blog({ title, content, author, image });
@@ -182,8 +180,7 @@ blogRouter.put('/:id', passport.authenticate('jwt', { session: false }), upload.
     body('title')
         .trim()
         .notEmpty()
-        .withMessage('Title is required')
-        .escape(),
+        .withMessage('Title is required'),
     body('content')
         .isLength({ min: 10 })
         .withMessage('Content must be at least 10 characters')
@@ -196,7 +193,7 @@ blogRouter.put('/:id', passport.authenticate('jwt', { session: false }), upload.
     }
 
     const { title, content, isPublished } = req.body;
-    const image = req.file ? req.file.filename : req.body.image;
+    const image = req.file ? req.file.path : req.body.image;
 
     try {
         const blog = await Blog.findById(req.params.id).exec();
