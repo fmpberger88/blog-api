@@ -20,7 +20,7 @@ const authRouter = express.Router();
  *   post:
  *     tags: [Auth]
  *     summary: Register a new user
- *     description: Register a new user with username, email, and password.
+ *     description: Register a new user with username, first name, family name, email, and password.
  *     requestBody:
  *       required: true
  *       content:
@@ -29,10 +29,16 @@ const authRouter = express.Router();
  *             type: object
  *             required:
  *               - username
+ *               - first_name
+ *               - family_name
  *               - email
  *               - password
  *             properties:
  *               username:
+ *                 type: string
+ *               first_name:
+ *                 type: string
+ *               family_name:
  *                 type: string
  *               email:
  *                 type: string
@@ -41,6 +47,8 @@ const authRouter = express.Router();
  *                 format: password
  *             example:
  *               username: johndoe
+ *               first_name: John
+ *               family_name: Doe
  *               email: johndoe@example.com
  *               password: strongpassword
  *     responses:
@@ -52,7 +60,16 @@ const authRouter = express.Router();
 authRouter.post('/register', [
     body('username')
         .trim()
+        .escape()
         .notEmpty(),
+    body('first_name')
+        .trim()
+        .notEmpty()
+        .escape(),
+    body('family_name')
+        .trim()
+        .notEmpty()
+        .escape(),
     body('email')
         .isEmail(),
     body('password')
@@ -66,8 +83,8 @@ authRouter.post('/register', [
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const { username, email, password } = req.body;
-    const user = new User({ username, email, password });
+    const { username, first_name, family_name, email, password } = req.body;
+    const user = new User({ username, first_name, family_name, email, password });
     await user.save();
     res.send('Registration successful');
 });
@@ -127,7 +144,7 @@ authRouter.post('/login', [
     }
 
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).exec();
 
     if (!user || !( await user.isValidPassword(password))) {
         return res.status(401).json({ message: 'Invalid credentials '});

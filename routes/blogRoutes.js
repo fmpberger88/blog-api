@@ -37,7 +37,8 @@ blogRouter.get('/', async(req, res) => {
     try {
         const blogs = await Blog.find({ isPublished: true })
             .populate('author')
-            .populate('comments');
+            .populate('comments')
+            .exec()
 
         res.json(blogs);
     } catch (err) {
@@ -78,7 +79,10 @@ blogRouter.get('/:id', async(req, res) => {
             { _id: req.params.id, isPublished: true},
             { $inc: { views: 1 } }, // increment views by 1
             { new: true } // Return the modified document
-        ).populate('author').populate('comments')
+        )
+            .populate('author')
+            .populate('comments')
+            .exec()
 
         if (!blog) {
             res.status(404).send('Blog not found or not published');
@@ -191,7 +195,7 @@ blogRouter.put('/:id', passport.authenticate('jwt', { session: false }), upload.
     const image = req.file ? req.file.filename : req.body.image;
 
     try {
-        const blog = await Blog.findById(req.params.id);
+        const blog = await Blog.findById(req.params.id).exec();
         if (!blog) {
             return res.status(404).json({ message: 'Blog not found' });
         }
@@ -238,7 +242,7 @@ blogRouter.put('/:id', passport.authenticate('jwt', { session: false }), upload.
  */
 blogRouter.delete('/:id', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
-        const blog = await Blog.findById(req.params.id);
+        const blog = await Blog.findById(req.params.id).exec();
         if (!blog) {
             return res.status(404).json({ message: 'Blog not found' });
         }

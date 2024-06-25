@@ -2,7 +2,16 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-    username: { type: String, required: true, unique: true },
+    username: {
+        type: String,
+        required: true,
+        unique: true },
+    first_name: {
+        type: String,
+        required: true },
+    family_name: {
+        type: String,
+        required: true },
     email: {
         type: String,
         required: true,
@@ -36,6 +45,16 @@ userSchema.pre('save', async function(next) {
 userSchema.methods.isValidPassword = async function(password) {
     return await bcrypt.compare(password, this.password);
 };
+
+// Virtual for user's fullname
+userSchema.virtual('name').get(function() {
+    let fullname = '';
+    if (this.first_name && this.family_name) {
+        fullname = `${this.family_name}, ${this.first_name}`;
+    }
+    return fullname;
+});
+
 
 const User = mongoose.model('User', userSchema);
 module.exports = User;

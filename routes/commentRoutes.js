@@ -16,7 +16,7 @@ const commentRouter = express.Router();
 // Param middleware that will run when 'commentId' is encountered
 commentRouter.param('commentId', async (req, res, next, id) => {
     try {
-        const comment = await Comments.findById(id);
+        const comment = await Comments.findById(id).exec();
         if (!comment) {
             return res.status(404).send('Could not find comment');
         }
@@ -30,7 +30,7 @@ commentRouter.param('commentId', async (req, res, next, id) => {
 // Param middleware for blogId
 commentRouter.param('blogId', async (req, res, next, id) => {
     try {
-        const blog = await Blog.findById(id).populate('comments');
+        const blog = await Blog.findById(id).populate('comments').exec();
         if (!blog) {
             return res.status(404).send('Blog not found');
         }
@@ -163,10 +163,10 @@ commentRouter.delete('/:commentId', passport.authenticate('jwt', { session: fals
         }
 
         // Remove the comment from the database
-        await Comments.deleteOne({ _id: req.comment._id });
+        await Comments.deleteOne({ _id: req.comment._id }).exec();
 
         // Remove the comment from the blog's comments array
-        await Blog.updateOne({ _id: req.comment.blog }, { $pull: { comments: req.comment._id } });
+        await Blog.updateOne({ _id: req.comment.blog }, { $pull: { comments: req.comment._id } }).exec();
 
         res.send('Comment deleted successfully');
     } catch (err) {
