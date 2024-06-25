@@ -85,7 +85,7 @@ blogRouter.get('/:id', async(req, res) => {
             .exec()
 
         if (!blog) {
-            res.status(404).send('Blog not found or not published');
+            return res.status(404).send('Blog not found or not published');
         }
 
         res.json(blog);
@@ -253,12 +253,14 @@ blogRouter.delete('/:id', passport.authenticate('jwt', { session: false }), asyn
             return res.status(403).json({ message: 'Unauthorized' });
         }
 
-        await blog.remove();
+        await Blog.deleteOne({ _id: req.params.id });
         res.send('Blog deleted successfully');
     } catch (err) {
-        res.status(500).send("Server error");
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 });
+
+
 
 
 /**
