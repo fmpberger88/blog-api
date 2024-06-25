@@ -74,6 +74,7 @@ A simple blog application built with Node.js, Express, MongoDB, Cloudinary, and 
 - `POST /api/v1/blogs` - Create a new blog post (requires JWT).
 - `PUT /api/v1/blogs/:id` - Update a blog post (requires JWT and blog author authorization).
 - `DELETE /api/v1/blogs/:id` - Delete a blog post (requires JWT and blog author authorization).
+- `GET /api/v1/blogs/users-blogs` - Retrieve all blogs by the current user (requires JWT).
 
 ### Comments
 - `GET /api/v1/comments/:blogId` - Retrieve all comments for a specific blog.
