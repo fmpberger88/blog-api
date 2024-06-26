@@ -120,7 +120,7 @@ blogRouter.get('/:id', async(req, res, next) => {
             .exec()
 
         if (!blog) {
-            return res.status(404).send('Blog not found or not published');
+            return res.status(404).json({ message: "Blog not found or not published"});
         }
 
         res.json(blog);
@@ -213,7 +213,7 @@ blogRouter.put('/:id/publish', passport.authenticate('jwt', { session: false }),
     try {
         const blog = await Blog.findById(req.params.id).exec();
         if (!blog) {
-            return res.status(404).send('Blog not found or not published');
+            return res.status(404).json({ message: "Blog not found"});
         }
 
         // Check if the logged-in user is the author of the blog

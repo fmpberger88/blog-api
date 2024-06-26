@@ -21,6 +21,7 @@ commentRouter.param('commentId', async (req, res, next, id) => {
             return res.status(404).send('Could not find comment');
         }
         req.comment = comment;
+        console.log(req.comment)
         next();
     } catch (err) {
         next(err);
@@ -159,13 +160,9 @@ commentRouter.post('/:blogId', [
  *       500:
  *         description: Internal server error.
  */
+// DELETE - Delete a comment
 commentRouter.delete('/:commentId', passport.authenticate('jwt', { session: false }), async (req, res, next) => {
     try {
-        // Check if the logged-in user is the author of the comment
-        if (req.comment.author.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ message: 'Unauthorized' });
-        }
-
         // Remove the comment from the database
         await Comments.deleteOne({ _id: req.comment._id }).exec();
 
@@ -177,6 +174,7 @@ commentRouter.delete('/:commentId', passport.authenticate('jwt', { session: fals
         next(err);
     }
 });
+
 
 /**
  * @swagger
