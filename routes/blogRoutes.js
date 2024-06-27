@@ -111,7 +111,7 @@ blogRouter.get('/users-blogs', passport.authenticate('jwt', { session: false}), 
 blogRouter.get('/:id', async(req, res, next) => {
     try {
         const blog = await Blog.findOneAndUpdate(
-            { _id: req.params.id, isPublished: true},
+            { _id: req.params.id },
             { $inc: { views: 1 } }, // increment views by 1
             { new: true } // Return the modified document
         )
@@ -120,7 +120,7 @@ blogRouter.get('/:id', async(req, res, next) => {
             .exec()
 
         if (!blog) {
-            return res.status(404).json({ message: "Blog not found or not published"});
+            return res.status(404).json({ message: "Blog not found!"});
         }
 
         res.json(blog);
@@ -269,7 +269,6 @@ blogRouter.put('/:id', passport.authenticate('jwt', { session: false }), upload.
     body('content')
         .isLength({ min: 10 })
         .withMessage('Content must be at least 10 characters')
-        .escape()
 ], async (req, res, next) => {
     const errors = validationResult(req);
 
