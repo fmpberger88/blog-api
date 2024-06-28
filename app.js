@@ -63,7 +63,20 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // app.use(passport.initialize); // Not sure wether required?
 app.use(morgan('dev'));
-app.use(helmet());
+
+app.use(helmet.contentSecurityPolicy({
+    directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "https://cdn.tiny.cloud"], // Erlauben Sie Skripte von vertrauenswürdigen Quellen wie TinyMCE CDN
+        styleSrc: ["'self'", "'unsafe-inline'"], // Unsichere Inline-Stile erlauben
+        imgSrc: ["'self'", "data:", "https://res.cloudinary.com"], // Bildquellen
+        connectSrc: ["'self'", "https://api.tinymce.com"], // API-Verbindungen
+        frameSrc: ["'none'"], // Verhindern Sie das Einbetten von Inhalten in Frames
+        objectSrc: ["'none'"], // Verhindern Sie die Verwendung von <object>, <embed>, <applet>
+        upgradeInsecureRequests: [], // Automatische HTTPS-Nutzung
+    },
+}));
+
 app.use(cors());
 
 // _________________ Rate Limiting _________________
