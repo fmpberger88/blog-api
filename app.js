@@ -77,7 +77,22 @@ app.use(helmet.contentSecurityPolicy({
     },
 }));
 
-app.use(cors());
+// _________________ CORS Configuration _________________
+const allowedOrigins = [
+    'https://www.fmpberger.com',
+    'https://blog-dashboard.onrender.com',
+    'http://localhost:5173'
+];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    }
+}));
 
 // _________________ Rate Limiting _________________
 const limiter = rateLimit({
