@@ -7,6 +7,12 @@ const storage = new CloudinaryStorage({
     params: {
         folder: 'blog_uploads',
         allowedFormats: ['jpeg', 'jpg', 'png', 'gif', 'webp'],
+        format: async (req, file) => 'webp', // supports promises as well
+        public_id: (req, file) => file.originalname.split('.')[0], // Use file name as public ID
+        transformation: [
+            { width: 600, height: 400, crop: "fill", gravity: "center" }, // Resize and crop
+            { quality: "auto" }, // Adjust quality automatically
+        ]
     },
 });
 
