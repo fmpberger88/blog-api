@@ -10,7 +10,7 @@ const storage = new CloudinaryStorage({
         format: async (req, file) => 'webp', // supports promises as well
         public_id: (req, file) => file.originalname.split('.')[0], // Use file name as public ID
         transformation: [
-            { width: 600, height: 400, crop: "fill", gravity: "center" }, // Resize and crop
+            { width: 600, height: 500, crop: "fill", gravity: "center" }, // Resize and crop
             { quality: "auto" }, // Adjust quality automatically
         ]
     },
