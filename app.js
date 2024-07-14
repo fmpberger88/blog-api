@@ -8,6 +8,7 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
 const blogRoutes = require('./routes/blogRoutes');
+const blogRoutesV2 = require('./routes/blogRoutesV2');
 const commentRouter = require('./routes/commentRoutes');
 
 const errorHandler = require('./middlewares/errorHandler');
@@ -81,7 +82,8 @@ app.use(helmet.contentSecurityPolicy({
 const allowedOrigins = [
     'https://www.fmpberger.com',
     'https://blog-dashboard.onrender.com',
-    'http://localhost:5173'
+    'http://localhost:5173',
+    'http://localhost:5001'
 ];
 
 app.use(cors({
@@ -106,6 +108,8 @@ app.use(limiter);
 app.use('/api/v1/', authRoutes);
 app.use('/api/v1/blogs', blogRoutes);
 app.use('/api/v1/comments', commentRouter);
+
+app.use('/api/v2/blogs', blogRoutesV2);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
