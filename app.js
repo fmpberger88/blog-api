@@ -10,6 +10,7 @@ const authRoutes = require('./routes/authRoutes');
 const blogRoutes = require('./routes/blogRoutes');
 const blogRoutesV2 = require('./routes/blogRoutesV2');
 const commentRouter = require('./routes/commentRoutes');
+const commentRouterV2 = require('./routes/commentRoutesV2');
 const categoryRouter = require('./routes/categoryRoutes');
 
 const errorHandler = require('./middlewares/errorHandler');
@@ -56,7 +57,6 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 // _________________ Express App _____________
 const app = express();
-app.set('trust proxy', true);
 
 
 // _________________ Passport JWT-Strategy _________________
