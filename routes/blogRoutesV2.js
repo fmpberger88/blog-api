@@ -83,6 +83,91 @@ blogRouterV2.get('/users-blogs', passport.authenticate('jwt', { session: false }
     }
 });
 
+
+// GET - Search blog posts
+/**
+ * @swagger
+ * /api/v2/blogs/search:
+ *   get:
+ *     tags: [BlogsV2]
+ *     summary: Search blog posts
+ *     description: Search for blog posts based on title, content, tags, or categories.
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         description: Search term for blog posts
+ *       - in: query
+ *         name: tags
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *         description: List of tags to search for
+ *       - in: query
+ *         name: categories
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *         description: List of category IDs to search for
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of posts per page
+ *     responses:
+ *       200:
+ *         description: A list of blog posts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/BlogV2'
+ *       500:
+ *         description: Internal server error
+ */
+blogRouterV2.get('/search', async (req, res, next) => {
+    try {
+        const { q, tags, categories, page = 1, limit = 10 } = req.query;
+
+        const query = {};
+        if (q) {
+            query.$or = [
+                { title: { $regex: q, $options: 'i' } },
+                { content: { $regex: q, $options: 'i' } }
+            ];
+        }
+        if (tags) {
+            query.tags = { $in: tags.split(',') };
+        }
+        if (categories) {
+            query.categories = { $in: categories.split(',') };
+        }
+
+        const blogs = await BlogV2.find(query)
+            .skip((page - 1) * limit)
+            .limit(Number(limit))
+            .populate('author')
+            .populate('comments');
+
+        res.status(200).json(blogs);
+    } catch (err) {
+        next(err);
+    }
+});
+
+
+
 // GET - Read a single published blog by ID
 /**
  * @swagger
