@@ -113,6 +113,7 @@ app.use('/api/v1/blogs', blogRoutes);
 app.use('/api/v1/comments', commentRouter);
 
 app.use('/api/v2/blogs', blogRoutesV2);
+app.use('/api/v2/comments', commentRouterV2);
 app.use('/api/v2/categories', categoryRouter);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
