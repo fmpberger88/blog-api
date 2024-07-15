@@ -55,6 +55,8 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 // _________________ Express App _____________
 const app = express();
+app.set('trust proxy', true);
+
 
 // _________________ Passport JWT-Strategy _________________
 require('./middlewares/passport');
