@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const passport = require('passport');
 const upload = require('../middlewares/imageLoader');
 const BlogV2 = require("../models/blogV2");
+const commentRouterV2 = require("./commentRoutesV2");
 
 const blogRouterV2 = express.Router();
 
@@ -12,6 +13,23 @@ const blogRouterV2 = express.Router();
  *   name: BlogV2
  *   description: Blog management V2
  */
+
+// Param middleware for blogId
+blogRouterV2.param('blogId', async (req, res, next, id) => {
+    try {
+        const blog = await BlogV2.findById(id).populate('comments').exec();
+        if (!blog) {
+            return res.status(404).json({ message: 'Blog not found' });
+        }
+        req.blog = blog;
+        next();
+    } catch (err) {
+        next(err);
+    }
+});
+
+// Use the comment router for routes with :blogId/comments
+blogRouterV2.use('/:blogId/comments', commentRouterV2);
 
 // GET - Read all published blogs
 /**
@@ -89,7 +107,7 @@ blogRouterV2.get('/users-blogs', passport.authenticate('jwt', { session: false }
  * @swagger
  * /api/v2/blogs/search:
  *   get:
- *     tags: [BlogsV2]
+ *     tags: [BlogV2]
  *     summary: Search blog posts
  *     description: Search for blog posts based on title, content, tags, or categories.
  *     parameters:
@@ -350,7 +368,7 @@ blogRouterV2.put('/:id/publish', passport.authenticate('jwt', { session: false})
  * @swagger
  * /api/v2/blogs/{id}/related:
  *   get:
- *     tags: [BlogsV2]
+ *     tags: [BlogV2]
  *     summary: Get related blog posts
  *     description: Retrieve related blog posts based on tags and categories.
  *     parameters:
