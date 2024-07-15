@@ -3,6 +3,12 @@ const { body, validationResult } = require('express-validator');
 const BlogV2 = require('../models/blogV2');
 const passport = require('passport');
 const upload = require('../middlewares/imageLoader');
+const BlogV2 = require("../models/blogV2");
+const req = require("express/lib/request");
+const res = require("express/lib/response");
+const req = require("express/lib/request");
+const res = require("express/lib/response");
+const res = require("express/lib/response");
 
 const blogRouterV2 = express.Router();
 
@@ -392,7 +398,108 @@ blogRouterV2.delete('/:id', passport.authenticate('jwt', { session: false }), as
     } catch (err) {
         next(err);
     }
-})
+});
+
+// Blog liken
+/**
+ * @swagger
+ * /api/v2/blogs/{id}/like:
+ *   post:
+ *     tags: [BlogV2]
+ *     summary: Like a blog post
+ *     description: Add a like to a blog post.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Unique ID of the blog post to like
+ *     responses:
+ *       200:
+ *         description: Blog post liked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/BlogV2'
+ *       404:
+ *         description: Blog post not found
+ *       500:
+ *         description: Internal server error
+ */
+
+blogRouterV2.post('/:id/like', passport.authenticate('jwt', { session: false }), async (req, res, next) => {
+    try {
+        const blog = await BlogV2.findById(req.params.id).exec();
+        if (!blog) {
+            return res.status(404).json({ message: 'Blog not found' });
+        }
+
+        const userId = req.user._id;
+        const isLiked = blog.likes.includes(userId);
+
+        if (isLiked) {
+            return res.status(400).json({ message: 'You have already liked this blog' });
+        }
+
+        blog.likes.push(userId);
+        await blog.save();
+
+        res.status(200).json(blog);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// Blog unliken
+/**
+ * @swagger
+ * /api/v2/blogs/{id}/unlike:
+ *   post:
+ *     tags: [BlogV2]
+ *     summary: Unlike a blog post
+ *     description: Remove a like from a blog post.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Unique ID of the blog post to unlike
+ *     responses:
+ *       200:
+ *         description: Blog post unliked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/BlogV2'
+ *       404:
+ *         description: Blog post not found
+ *       500:
+ *         description: Internal server error
+ */
+
+blogRouterV2.post('/:id/unlike', passport.authenticate('jwt', { session: false }), async (req, res, next) => {
+    try {
+        const blog = await BlogV2.findById(req.params.id).exec();
+        if (!blog) {
+            return res.status(404).json({ message: "Blog not found" })
+        }
+
+        if(blog.likes.includes(req.user._id)) {
+            blog.likes = blog.likes.filter(userId => userId.toString() !== req.user._id.toString());
+            await blog.save();
+        }
+
+        res.status(200).json(blog);
+    } catch (err) {
+        next(err);
+    }
+});
 
 /**
  * @swagger
