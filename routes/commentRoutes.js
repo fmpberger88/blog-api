@@ -18,10 +18,9 @@ commentRouter.param('commentId', async (req, res, next, id) => {
     try {
         const comment = await Comments.findById(id).exec();
         if (!comment) {
-            return res.status(404).send('Could not find comment');
+            return res.status(404).json({ message: 'Comment not found' });
         }
         req.comment = comment;
-        console.log(req.comment)
         next();
     } catch (err) {
         next(err);
@@ -33,7 +32,7 @@ commentRouter.param('blogId', async (req, res, next, id) => {
     try {
         const blog = await Blog.findById(id).populate('comments').exec();
         if (!blog) {
-            return res.status(404).send('Blog not found');
+            return res.status(404).json({ message: 'Blog not found' });
         }
         req.blog = blog;
         next();
