@@ -23,7 +23,7 @@ const blogSchemaV2 = new mongoose.Schema({
     },
     comments: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Comment'
+        ref: 'CommentV2'
     }],
     views: {
         type: Number,
@@ -63,5 +63,4 @@ const blogSchemaV2 = new mongoose.Schema({
     timestamps: true
 });
 
-const BlogV2 = mongoose.model('BlogV2', blogSchemaV2);
-module.exports = BlogV2;
+module.exports = mongoose.models.BlogV2 || mongoose.model('BlogV2', blogSchemaV2);
