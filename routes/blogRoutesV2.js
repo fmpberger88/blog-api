@@ -1,14 +1,8 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const BlogV2 = require('../models/blogV2');
 const passport = require('passport');
 const upload = require('../middlewares/imageLoader');
 const BlogV2 = require("../models/blogV2");
-const req = require("express/lib/request");
-const res = require("express/lib/response");
-const req = require("express/lib/request");
-const res = require("express/lib/response");
-const res = require("express/lib/response");
 
 const blogRouterV2 = express.Router();
 
