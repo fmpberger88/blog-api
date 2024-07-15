@@ -260,6 +260,59 @@ blogRouterV2.put('/:id/publish', passport.authenticate('jwt', { session: false})
     }
 });
 
+// GET - Retrieve related blog posts
+/**
+ * @swagger
+ * /api/v2/blogs/{id}/related:
+ *   get:
+ *     tags: [BlogsV2]
+ *     summary: Get related blog posts
+ *     description: Retrieve related blog posts based on tags and categories.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Unique ID of the blog post to find related posts for
+ *     responses:
+ *       200:
+ *         description: A list of related blog posts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/BlogV2'
+ *       404:
+ *         description: Blog post not found
+ *       500:
+ *         description: Internal server error
+ */
+
+blogRouterV2.get('/:id/related', async (req, res, next) => {
+    try {
+        const blog = await BlogV2.findById(req.params.id);
+        if (!blog) {
+            return res.status(404).json({ message: 'Blog not found' });
+        }
+
+        const relatedBlogs = await Blog.find({
+            $or: [
+                { categories: { $in: blog.categories } },
+                { tags: { $in: blog.tags } }
+            ],
+            _id: { $ne: blog._id },
+            isPublished: true
+        }).limit(5);  // Adjust the limit as needed
+
+        res.status(200).json(relatedBlogs);
+
+    } catch (err) {
+        next(err);
+    }
+})
+
 // PUT - Update Blog
 /**
  * @swagger
