@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const categoryRouter = express.Router();
 const Category = require('../models/Category');
+const isAdmin = require('../middlewares/isAdmin');
 const passport = require('passport')
 
 /**
@@ -205,14 +206,14 @@ categoryRouter.patch('/:id', passport.authenticate('jwt', { session: false}), [
  *         description: Internal server error
  */
 
-categoryRouter.delete('/:id', passport.authenticate('jwt', { session: false }), async (req, res, next) => {
+categoryRouter.delete('/:id', passport.authenticate('jwt', { session: false }), isAdmin, async (req, res, next) => {
     try {
-        await Category.findByIdAndDelete(req.params.id);
+        await Category.findByIdAndDelete(req.params.id).exec();
         res.status(200).json({ message: 'Category deleted successfully' });
     } catch (err) {
         next(err);
     }
-})
+});
 
 module.exports = categoryRouter;
 
