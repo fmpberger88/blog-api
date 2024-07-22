@@ -223,6 +223,7 @@ blogRouterV2.get('/:id', async (req, res, next) => {
             { new: true } // Return the modified document
         )
             .populate('author')
+            .populate('categories')
             .populate('comments')
             .exec()
 
@@ -299,11 +300,11 @@ blogRouterV2.post('/', passport.authenticate('jwt', { session: false }), upload.
             content,
             author,
             image,
-            categories,
-            tags,
+            categories: JSON.parse(categories),
+            tags: JSON.parse(tags),
             seoTitle,
             seoDescription,
-            seoKeywords
+            seoKeywords: JSON.parse(seoKeywords)
         });
 
         await newBlog.save();
