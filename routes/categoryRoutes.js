@@ -74,13 +74,15 @@ categoryRouter.post('/', passport.authenticate('jwt', { session: false }), [
         .notEmpty()
         .withMessage('Please enter a name')
         .isLength({ max: 50 })
-        .withMessage('Title cannot be more than 50 characters'),
+        .withMessage('Title cannot be more than 50 characters')
+        .escape(),
     body('description')
         .trim()
         .notEmpty()
         .withMessage('Please enter a description')
         .isLength({ max: 200 })
-        .withMessage('Description cannot be more than 200 characters'),
+        .withMessage('Description cannot be more than 200 characters')
+        .escape(),
 ], async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -141,12 +143,14 @@ categoryRouter.patch('/:id', passport.authenticate('jwt', { session: false}), [
         .optional()
         .trim()
         .isLength({ max: 50 })
-        .withMessage('Title cannot be more than 50 characters'),
+        .withMessage('Title cannot be more than 50 characters')
+        .escape(),
     body('description')
         .optional()
         .trim()
         .isLength({ max: 200 })
         .withMessage('Description cannot be more than 200 characters')
+        .escape(),
 ], async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
