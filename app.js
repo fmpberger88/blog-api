@@ -86,7 +86,8 @@ const allowedOrigins = [
     'https://www.fmpberger.com',
     'https://blog-dashboard.onrender.com',
     'http://localhost:5173',
-    'http://localhost:5001'
+    'http://localhost:5001',
+    'http://localhost:5174'
 ];
 
 app.use(cors({
@@ -112,6 +113,7 @@ app.use('/api/v1/', authRoutes);
 app.use('/api/v1/blogs', blogRoutes);
 app.use('/api/v1/comments', commentRouter);
 
+app.use('api/v2/', authRoutes);
 app.use('/api/v2/blogs', blogRoutesV2);
 app.use('/api/v2/comments', commentRouterV2);
 app.use('/api/v2/categories', categoryRouter);
