@@ -13,6 +13,11 @@ const categorySchema = new mongoose.Schema({
         required: [true, 'Please enter a description'],
         trim: true,
         maxLength: [200, 'Description cannot be more than 200 characters']
+    },
+    author: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: [true, 'Please enter a author'],
     }
 }, {
     timestamps: true
