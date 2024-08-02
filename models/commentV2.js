@@ -11,7 +11,7 @@ const commentSchemaV2 = new Schema({
     author: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        default: null
     },
     replies: [{
         type: mongoose.Schema.Types.ObjectId,
