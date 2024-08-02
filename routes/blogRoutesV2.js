@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const passport = require('passport');
+const customPassportAuth = require('../middlewares/customPassportAuth');
 const upload = require('../middlewares/imageLoader');
 const BlogV2 = require("../models/blogV2");
 const commentRouterV2 = require("./commentRoutesV2");
@@ -88,7 +88,7 @@ blogRouterV2.get('/', async (req, res, next) => {
  *        description: Internal server error
  */
 
-blogRouterV2.get('/users-blogs', passport.authenticate('jwt', { session: false }), async (req, res, next) => {
+blogRouterV2.get('/users-blogs', customPassportAuth, async (req, res, next) => {
     try {
         const userId = req.user._id;
         const blogs = await BlogV2.find({ author: userId })
@@ -262,7 +262,7 @@ blogRouterV2.get('/:id', async (req, res, next) => {
  *        description: Internal server error
  */
 
-blogRouterV2.post('/', passport.authenticate('jwt', { session: false }), upload.single('image'), [
+blogRouterV2.post('/', customPassportAuth, upload.single('image'), [
     body('title')
         .trim()
         .notEmpty()
@@ -342,7 +342,7 @@ blogRouterV2.post('/', passport.authenticate('jwt', { session: false }), upload.
  *        description: Internal server error
  */
 
-blogRouterV2.put('/:id/publish', passport.authenticate('jwt', { session: false}), async (req, res, next) => {
+blogRouterV2.put('/:id/publish', customPassportAuth, async (req, res, next) => {
     try {
         const blog = await BlogV2.findById(req.params.id).exec();
 
@@ -449,7 +449,7 @@ blogRouterV2.get('/:id/related', async (req, res, next) => {
  *        description: Internal server error
  */
 
-blogRouterV2.put('/:id', passport.authenticate('jwt', { session: false }), upload.single('image'), [
+blogRouterV2.put('/:id', customPassportAuth, upload.single('image'), [
     body('title')
         .trim()
         .notEmpty()
@@ -492,11 +492,11 @@ blogRouterV2.put('/:id', passport.authenticate('jwt', { session: false }), uploa
 
         blog.title = title;
         blog.content = content;
-        blog.categories = categories;
-        blog.tags = tags;
+        blog.categories = JSON.parse(categories);
+        blog.tags = JSON.parse(tags);
         blog.seoTitle = seoTitle;
         blog.seoDescription = seoDescription;
-        blog.seoKeywords = seoKeywords;
+        blog.seoKeywords = JSON.parse(seoKeywords);
         if (image) {
             blog.image = image;
         }
@@ -532,7 +532,7 @@ blogRouterV2.put('/:id', passport.authenticate('jwt', { session: false }), uploa
  *        description: Internal server error
  */
 
-blogRouterV2.delete('/:id', passport.authenticate('jwt', { session: false }), async (req, res, next) => {
+blogRouterV2.delete('/:id', customPassportAuth, async (req, res, next) => {
     try {
         const blog = await BlogV2.findById(req.params.id).exec();
         if (!blog) {
@@ -581,7 +581,7 @@ blogRouterV2.delete('/:id', passport.authenticate('jwt', { session: false }), as
  *         description: Internal server error
  */
 
-blogRouterV2.post('/:id/like', passport.authenticate('jwt', { session: false }), async (req, res, next) => {
+blogRouterV2.post('/:id/like', customPassportAuth, async (req, res, next) => {
     try {
         const blog = await BlogV2.findById(req.params.id).exec();
         if (!blog) {
@@ -634,7 +634,7 @@ blogRouterV2.post('/:id/like', passport.authenticate('jwt', { session: false }),
  *         description: Internal server error
  */
 
-blogRouterV2.post('/:id/unlike', passport.authenticate('jwt', { session: false }), async (req, res, next) => {
+blogRouterV2.post('/:id/unlike', customPassportAuth, async (req, res, next) => {
     try {
         const blog = await BlogV2.findById(req.params.id).exec();
         if (!blog) {

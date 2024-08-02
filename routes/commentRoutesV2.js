@@ -1,11 +1,9 @@
 const express = require('express');
-const { body, param, validationResult } = require('express-validator');
+const { body, validationResult } = require('express-validator');
 const CommentV2 = require('../models/CommentV2');
 const BlogV2 = require('../models/BlogV2');
-const passport = require('passport');
+const customPassportAuth = require('../middlewares/customPassportAuth');
 const isAdmin = require('../middlewares/isAdmin');
-const commentRouter = require("./commentRoutes");
-
 
 const commentRouterV2 = express.Router({ mergeParams: true });
 
@@ -16,10 +14,10 @@ const commentRouterV2 = express.Router({ mergeParams: true });
  *   description: Comment management
  */
 
-// Param middleware that will run when 'commitId' is encountered
-commentRouterV2.param('commentId', async(req, res, next, id) => {
+// Param middleware that will run when 'commentId' is encountered
+commentRouterV2.param('commentId', async (req, res, next, id) => {
     try {
-        const comment = await CommentV2.findById(id).exec();
+        const comment = await CommentV2.findById(id).populate('author').exec();
         if (!comment) {
             return res.status(404).json({ message: 'Comment not found' });
         }
@@ -42,7 +40,7 @@ commentRouterV2.param('blogId', async (req, res, next, id) => {
     } catch (err) {
         next(err);
     }
-})
+});
 
 // GET - Read all comments for a blog post
 /**
@@ -112,7 +110,7 @@ commentRouterV2.get('/', async (req, res, next) => {
  *       500:
  *         description: Internal server error
  */
-commentRouterV2.post('/', passport.authenticate('jwt', { session: false }), [
+commentRouterV2.post('/', [
     body('text').trim().notEmpty().withMessage('Please enter a text').isLength({ min: 5 }).withMessage('Text must be at least 5 characters long')
 ], async (req, res, next) => {
     const errors = validationResult(req);
@@ -121,9 +119,10 @@ commentRouterV2.post('/', passport.authenticate('jwt', { session: false }), [
     }
 
     try {
+        console.log("User ID:", req.user); // Debugging: Print user ID
         const comment = new CommentV2({
             text: req.body.text,
-            author: req.user._id
+            author: req.user ? req.user._id : null,  // Optional author
         });
 
         await comment.save();
@@ -167,7 +166,7 @@ commentRouterV2.post('/', passport.authenticate('jwt', { session: false }), [
  *       500:
  *         description: Internal server error
  */
-commentRouterV2.post('/:commentId/replies', passport.authenticate('jwt', { session: false }), [
+commentRouterV2.post('/:commentId/replies', [
     body('text').trim().notEmpty().withMessage('Please enter a text').isLength({ min: 5 }).withMessage('Text must be at least 5 characters long')
 ], async (req, res, next) => {
     const errors = validationResult(req);
@@ -178,7 +177,7 @@ commentRouterV2.post('/:commentId/replies', passport.authenticate('jwt', { sessi
     try {
         const reply = new CommentV2({
             text: req.body.text,
-            author: req.user._id
+            author: req.user ? req.user._id : null,  // Optional author
         });
 
         await reply.save();
@@ -191,6 +190,71 @@ commentRouterV2.post('/:commentId/replies', passport.authenticate('jwt', { sessi
     }
 });
 
+// DELETE - Delete a comment or reply
+/**
+ * @swagger
+ * /api/v2/blogs/{blogId}/comments/{commentId}:
+ *   delete:
+ *     tags: [CommentsV2]
+ *     summary: Delete a comment or reply
+ *     description: Delete a comment or reply by its ID.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: blogId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Unique ID of the blog post
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Unique ID of the comment or reply to delete
+ *     responses:
+ *       200:
+ *         description: Comment or reply deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Comment or reply not found
+ *       500:
+ *         description: Internal server error
+ */
+commentRouterV2.delete('/:commentId', customPassportAuth, isAdmin, async (req, res, next) => {
+    const { commentId } = req.params;
+
+    try {
+        const comment = await CommentV2.findByIdAndDelete(commentId);
+
+        if (!comment) {
+            return res.status(404).json({ message: 'Comment or reply not found' });
+        }
+
+        // Remove comment ID from blog's comments array
+        await BlogV2.updateMany(
+            { comments: commentId },
+            { $pull: { comments: commentId } }
+        );
+
+        // If the deleted comment is a reply, remove it from the parent comment's replies array
+        await CommentV2.updateMany(
+            { replies: commentId },
+            { $pull: { replies: commentId } }
+        );
+
+        res.status(200).json({ message: 'Comment or reply deleted successfully' });
+    } catch (err) {
+        next(err);
+    }
+});
 
 /**
  * @swagger
@@ -200,7 +264,6 @@ commentRouterV2.post('/:commentId/replies', passport.authenticate('jwt', { sessi
  *       type: object
  *       required:
  *         - text
- *         - author
  *       properties:
  *         text:
  *           type: string
@@ -209,7 +272,7 @@ commentRouterV2.post('/:commentId/replies', passport.authenticate('jwt', { sessi
  *           minLength: 5
  *         author:
  *           type: string
- *           description: The ID of the user who authored the comment
+ *           description: The ID of the user who authored the comment (optional)
  *         replies:
  *           type: array
  *           items:

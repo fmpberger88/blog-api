@@ -1,9 +1,10 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const categoryRouter = express.Router();
 const Category = require('../models/Category');
 const isAdmin = require('../middlewares/isAdmin');
-const passport = require('passport')
+const customPassportAuth = require('../middlewares/customPassportAuth');
+
+const categoryRouter = express.Router();
 
 /**
  * @swagger
@@ -34,8 +35,47 @@ const passport = require('passport')
  */
 categoryRouter.get('/', async (req, res, next) => {
     try {
-        const categories = await Category.find();
+        const categories = await Category.find().populate('author').exec();
         res.status(200).json(categories);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// GET - Read a category by ID
+/**
+ * @swagger
+ * /api/v2/categories/{categoryId}:
+ *   get:
+ *     tags: [Categories]
+ *     summary: Get one category by ID
+ *     description: Retrieve one category by ID.
+ *     parameters:
+ *       - in: path
+ *         name: categoryId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Unique ID of the category
+ *     responses:
+ *       200:
+ *         description: A category by ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Category'
+ *       404:
+ *         description: Category not found
+ *       500:
+ *         description: Internal server error
+ */
+categoryRouter.get('/:categoryId', async (req, res, next) => {
+    try {
+        const category = await Category.findById(req.params.categoryId).populate('author').exec();
+        if (!category) {
+            return res.status(404).json({ message: 'Category not found' });
+        }
+        res.status(200).json(category);
     } catch (err) {
         next(err);
     }
@@ -67,40 +107,45 @@ categoryRouter.get('/', async (req, res, next) => {
  *       500:
  *         description: Internal server error
  */
+categoryRouter.post('/',
+    customPassportAuth,
+    isAdmin,
+    [
+        body('name')
+            .trim()
+            .notEmpty()
+            .withMessage('Please enter a name')
+            .isLength({ max: 50 })
+            .withMessage('Name cannot be more than 50 characters')
+            .escape(),
+        body('description')
+            .trim()
+            .notEmpty()
+            .withMessage('Please enter a description')
+            .isLength({ max: 200 })
+            .withMessage('Description cannot be more than 200 characters')
+            .escape(),
+    ],
+    async (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
 
-categoryRouter.post('/', passport.authenticate('jwt', { session: false }), [
-    body('name')
-        .trim()
-        .notEmpty()
-        .withMessage('Please enter a name')
-        .isLength({ max: 50 })
-        .withMessage('Title cannot be more than 50 characters')
-        .escape(),
-    body('description')
-        .trim()
-        .notEmpty()
-        .withMessage('Please enter a description')
-        .isLength({ max: 200 })
-        .withMessage('Description cannot be more than 200 characters')
-        .escape(),
-], async (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        const category = new Category({
+            name: req.body.name,
+            description: req.body.description,
+            author: req.user._id
+        });
+
+        try {
+            const newCategory = await category.save();
+            res.status(201).json(newCategory);
+        } catch (err) {
+            next(err);
+        }
     }
-
-    const category = new Category({
-        name: req.body.name,
-        description: req.body.description
-    });
-
-    try {
-        const newCategory = await category.save();
-        res.status(201).json(newCategory)
-    } catch (err) {
-        next(err);
-    }
-});
+);
 
 // PATCH - Update Category
 /**
@@ -137,47 +182,50 @@ categoryRouter.post('/', passport.authenticate('jwt', { session: false }), [
  *       500:
  *         description: Internal server error
  */
+categoryRouter.patch('/:id',
+    customPassportAuth,
+    isAdmin,
+    [
+        body('name')
+            .optional()
+            .trim()
+            .isLength({ max: 50 })
+            .withMessage('Name cannot be more than 50 characters')
+            .escape(),
+        body('description')
+            .optional()
+            .trim()
+            .isLength({ max: 200 })
+            .withMessage('Description cannot be more than 200 characters')
+            .escape(),
+    ],
+    async (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
 
-categoryRouter.patch('/:id', passport.authenticate('jwt', { session: false}), [
-    body('name')
-        .optional()
-        .trim()
-        .isLength({ max: 50 })
-        .withMessage('Title cannot be more than 50 characters')
-        .escape(),
-    body('description')
-        .optional()
-        .trim()
-        .isLength({ max: 200 })
-        .withMessage('Description cannot be more than 200 characters')
-        .escape(),
-], async (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        try {
+            const category = await Category.findById(req.params.id);
+            if (!category) {
+                return res.status(404).json({ message: 'Category not found' });
+            }
+
+            if (req.body.name !== undefined) {
+                category.name = req.body.name;
+            }
+
+            if (req.body.description !== undefined) {
+                category.description = req.body.description;
+            }
+
+            const updatedCategory = await category.save();
+            res.status(200).json(updatedCategory);
+        } catch (err) {
+            next(err);
+        }
     }
-
-    try {
-        const category = await Category.findById(req.params.id);
-        if (!category) {
-            return res.status(404).json({ message: 'Category not found' });
-        }
-
-        if (req.body.name !== null) {
-            category.name = req.body.name;
-        }
-
-        if (req.body.description !== null) {
-            category.description = req.body.description;
-        }
-
-        const updatedCategory = await category.save();
-        res.status(200).json(updatedCategory);
-
-    } catch (err) {
-        next(err);
-    }
-});
+);
 
 // DELETE - Remove category
 /**
@@ -206,18 +254,28 @@ categoryRouter.patch('/:id', passport.authenticate('jwt', { session: false}), [
  *                   type: string
  *       404:
  *         description: Category not found
+ *       401:
+ *         description: Unauthorized
  *       500:
  *         description: Internal server error
  */
+categoryRouter.delete('/:id',
+    customPassportAuth,
+    isAdmin,
+    async (req, res, next) => {
+        try {
+            const category = await Category.findById(req.params.id).exec();
+            if (!category) {
+                return res.status(404).json({ message: 'Category not found' });
+            }
 
-categoryRouter.delete('/:id', passport.authenticate('jwt', { session: false }), isAdmin, async (req, res, next) => {
-    try {
-        await Category.findByIdAndDelete(req.params.id).exec();
-        res.status(200).json({ message: 'Category deleted successfully' });
-    } catch (err) {
-        next(err);
+            await Category.findByIdAndDelete(req.params.id).exec();
+            res.status(200).json({ message: 'Category deleted successfully' });
+        } catch (err) {
+            next(err);
+        }
     }
-});
+);
 
 module.exports = categoryRouter;
 
