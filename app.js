@@ -3,7 +3,6 @@ const morgan = require('morgan');
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const cors = require('cors');
-const passport = require('passport');
 require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
@@ -65,8 +64,7 @@ require('./middlewares/passport');
 // _________________ Middlewares _________________
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// app.use(passport.initialize); // Not sure wether required?
-app.use(morgan('common'));
+app.use(morgan('dev'));
 
 app.use(helmet.contentSecurityPolicy({
     directives: {
