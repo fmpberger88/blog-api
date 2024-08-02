@@ -66,7 +66,7 @@ require('./middlewares/passport');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // app.use(passport.initialize); // Not sure wether required?
-app.use(morgan('dev'));
+app.use(morgan('common'));
 
 app.use(helmet.contentSecurityPolicy({
     directives: {
