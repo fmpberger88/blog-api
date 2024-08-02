@@ -152,7 +152,7 @@ authRouter.post('/login', [
         return res.status(401).json({ message: 'Invalid credentials '});
     }
 
-    const payload = { id: user.id, email: user.email };
+    const payload = { id: user.id, email: user.email, isAdmin: user.isAdmin };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     res.json({
@@ -162,7 +162,9 @@ authRouter.post('/login', [
             username: user.username,
             first_name: user.first_name,
             family_name: user.family_name,
-            email: user.email
+            email: user.email,
+            isAdmin: user.isAdmin,
+            isAuthor: user.isAuthor
         }
     });
 })
