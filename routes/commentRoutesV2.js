@@ -17,7 +17,13 @@ const commentRouterV2 = express.Router({ mergeParams: true });
 // Param middleware that will run when 'commentId' is encountered
 commentRouterV2.param('commentId', async (req, res, next, id) => {
     try {
-        const comment = await CommentV2.findById(id).populate('author').exec();
+        const comment = await CommentV2.findById(id).populate('author').populate({
+            path: 'replies',
+            populate: {
+                path: 'author',
+                select: ['username', 'text', 'createdAt']
+            }
+        }).exec();
         if (!comment) {
             return res.status(404).json({ message: 'Comment not found' });
         }
@@ -31,7 +37,16 @@ commentRouterV2.param('commentId', async (req, res, next, id) => {
 // Param middleware for blogId
 commentRouterV2.param('blogId', async (req, res, next, id) => {
     try {
-        const blog = await BlogV2.findById(id).populate('comments').exec();
+        const blog = await BlogV2.findById(id).populate({
+            path: 'comments',
+            populate: {
+                path: 'author replies',
+                populate: {
+                    path: 'author',
+                    select: 'username'
+                }
+            }
+        }).exec();
         if (!blog) {
             return res.status(404).json({ message: 'Blog not found' });
         }
@@ -41,6 +56,8 @@ commentRouterV2.param('blogId', async (req, res, next, id) => {
         next(err);
     }
 });
+
+
 
 // GET - Read all comments for a blog post
 /**
@@ -73,11 +90,22 @@ commentRouterV2.param('blogId', async (req, res, next, id) => {
  */
 commentRouterV2.get('/', async (req, res, next) => {
     try {
-        res.status(200).json(req.blog.comments);
+        const populatedComments = await CommentV2.find({ _id: { $in: req.blog.comments } })
+            .populate('author')
+            .populate({
+                path: 'replies',
+                populate: {
+                    path: 'author',
+                    select: 'username'
+                }
+            }).exec();
+        console.log(populatedComments)
+        res.status(200).json(populatedComments);
     } catch (err) {
         next(err);
     }
 });
+
 
 // POST - Add a new comment to a blog post
 /**
@@ -110,7 +138,7 @@ commentRouterV2.get('/', async (req, res, next) => {
  *       500:
  *         description: Internal server error
  */
-commentRouterV2.post('/', [
+commentRouterV2.post('/',customPassportAuth, [
     body('text').trim().notEmpty().withMessage('Please enter a text').isLength({ min: 5 }).withMessage('Text must be at least 5 characters long')
 ], async (req, res, next) => {
     const errors = validationResult(req);
@@ -166,7 +194,7 @@ commentRouterV2.post('/', [
  *       500:
  *         description: Internal server error
  */
-commentRouterV2.post('/:commentId/replies', [
+commentRouterV2.post('/:commentId/replies', customPassportAuth, [
     body('text').trim().notEmpty().withMessage('Please enter a text').isLength({ min: 5 }).withMessage('Text must be at least 5 characters long')
 ], async (req, res, next) => {
     const errors = validationResult(req);
