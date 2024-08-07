@@ -99,7 +99,6 @@ commentRouterV2.get('/', async (req, res, next) => {
                     select: 'username'
                 }
             }).exec();
-        console.log(populatedComments)
         res.status(200).json(populatedComments);
     } catch (err) {
         next(err);
