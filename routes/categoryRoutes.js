@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const Category = require('../models/Category');
+const Category = require('../models/category');
 const isAdmin = require('../middlewares/isAdmin');
 const customPassportAuth = require('../middlewares/customPassportAuth');
 
