@@ -83,6 +83,7 @@ app.use(helmet.contentSecurityPolicy({
 const allowedOrigins = [
     'https://www.fmpberger.com',
     'https://blog-dashboard.onrender.com',
+    'https://blog-dashboard-v2.onrender.com',
     'http://localhost:5173',
     'http://localhost:5001',
     'http://localhost:5174'
