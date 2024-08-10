@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const CommentV2 = require('../models/CommentV2');
+const CommentV2 = require('../models/commentV2');
 const BlogV2 = require('../models/BlogV2');
 const customPassportAuth = require('../middlewares/customPassportAuth');
 const isAdmin = require('../middlewares/isAdmin');
