@@ -78,16 +78,43 @@ authRouter.post('/register', [
         .escape()
 
 ],
-    async (req, res) => {
+    async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
-
+    // 1) body gleich am Anfang auspacken
     const { username, first_name, family_name, email, password } = req.body;
-    const user = new User({ username, first_name, family_name, email, password });
-    await user.save();
-    res.send('Registration successful');
+
+    try {
+        // 2) Prüfen, ob User mit gleicher E-Mail oder gleichem Username existiert
+        const existingUser = await User.findOne({
+            $or: [{ email}, { username }]
+        }).exec();
+
+        if (!existingUser) {
+            return res.status(409).json({
+                message: 'User already exists',
+            })
+        }
+
+        // 3) Neuer User anlegen
+        const user = new User({ username, first_name, family_name, email, password });
+        await user.save();
+
+        res.send('Registration successful');
+    } catch (err) {
+        // 4) Duplicate-Key-Fehler aus Mongo direkt auffangen
+        if (err.code === 11000) {
+            return res.status(409).json({
+                message: 'User already exists',
+                details: err.keyValue
+            });
+        }
+
+        // alles andere an den globalen Error-Handler weiterreichen
+        return next(err);
+    }
 });
 
 // Login
