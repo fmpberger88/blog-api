@@ -1,8 +1,8 @@
-const express = require('express');
-const jwt = require('jsonwebtoken');
-const passport = require('passport');
-const { body, validationResult } = require('express-validator');
-const User = require('../models/users');
+// routes/auth.js
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const { body, validationResult } = require("express-validator");
+const User = require("../models/users");
 
 const authRouter = express.Router();
 
@@ -13,7 +13,54 @@ const authRouter = express.Router();
  *   description: User authentication and registration
  */
 
-// Registration
+/* ------------------------------------------------------------------
+ *   Validierungs-Middleware
+ * ------------------------------------------------------------------ */
+
+const validateRegistration = [
+    body("username")
+        .trim()
+        .notEmpty()
+        .withMessage("Username is required")
+        .escape(),
+
+    body("first_name")
+        .trim()
+        .notEmpty()
+        .withMessage("First name is required")
+        .escape(),
+
+    body("family_name")
+        .trim()
+        .notEmpty()
+        .withMessage("Family name is required")
+        .escape(),
+
+    body("email")
+        .isEmail()
+        .withMessage("Valid email is required")
+        .normalizeEmail(),
+
+    // Passwort NICHT escapen (sonst veränderst du es vor dem Hashing)
+    body("password")
+        .isLength({ min: 6 })
+        .withMessage("Password must be at least 6 characters long"),
+];
+
+const validateLogin = [
+    body("email")
+        .isEmail()
+        .withMessage("Valid email is required")
+        .normalizeEmail(),
+    body("password")
+        .notEmpty()
+        .withMessage("Password is required"),
+];
+
+/* ------------------------------------------------------------------
+ *   Registrierung
+ * ------------------------------------------------------------------ */
+
 /**
  * @swagger
  * /api/v1/register:
@@ -52,72 +99,79 @@ const authRouter = express.Router();
  *               email: johndoe@example.com
  *               password: strongpassword
  *     responses:
- *       200:
+ *       201:
  *         description: Registration successful
  *       400:
  *         description: Validation error
+ *       409:
+ *         description: User already exists
  */
-authRouter.post('/register', [
-    body('username')
-        .trim()
-        .escape()
-        .notEmpty(),
-    body('first_name')
-        .trim()
-        .notEmpty()
-        .escape(),
-    body('family_name')
-        .trim()
-        .notEmpty()
-        .escape(),
-    body('email')
-        .isEmail(),
-    body('password')
-        .isLength({ min: 6 })
-        .withMessage('Password must be at least 6 characters')
-        .escape()
-
-],
-    async (req, res, next) => {
+authRouter.post("/register", validateRegistration, async (req, res, next) => {
+    // Validierungsfehler prüfen
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        return res.status(400).json({
+            message: "Validation failed",
+            errors: errors.array(),
+        });
     }
-    // 1) body gleich am Anfang auspacken
+
     const { username, first_name, family_name, email, password } = req.body;
 
     try {
-        // 2) Prüfen, ob User mit gleicher E-Mail oder gleichem Username existiert
+        // prüfen, ob es bereits einen User mit dieser E-Mail ODER diesem Username gibt
         const existingUser = await User.findOne({
-            $or: [{ email}, { username }]
+            $or: [{ email }, { username }],
         }).exec();
 
-        if (!existingUser) {
+        if (existingUser) {
             return res.status(409).json({
-                message: 'User already exists',
-            })
-        }
-
-        // 3) Neuer User anlegen
-        const user = new User({ username, first_name, family_name, email, password });
-        await user.save();
-
-        res.send('Registration successful');
-    } catch (err) {
-        // 4) Duplicate-Key-Fehler aus Mongo direkt auffangen
-        if (err.code === 11000) {
-            return res.status(409).json({
-                message: 'User already exists',
-                details: err.keyValue
+                message: "User already exists",
             });
         }
 
-        // alles andere an den globalen Error-Handler weiterreichen
+        // neuen User anlegen
+        const user = new User({
+            username,
+            first_name,
+            family_name,
+            email,
+            password, // Hashing übernimmt idealerweise das User-Model (pre save Hook)
+        });
+
+        await user.save();
+
+        // du kannst hier auch gleich ein JWT zurückgeben, wenn du möchtest
+        return res.status(201).json({
+            message: "Registration successful",
+            user: {
+                id: user._id,
+                username: user.username,
+                first_name: user.first_name,
+                family_name: user.family_name,
+                email: user.email,
+                isAdmin: user.isAdmin,
+                isAuthor: user.isAuthor,
+            },
+        });
+    } catch (err) {
+        // Duplicate-Key-Fehler (z.B. unique Index auf email oder username)
+        if (err.code === 11000) {
+            return res.status(409).json({
+                message: "User already exists",
+                details: err.keyValue,
+            });
+        }
+
+        // alles andere an globalen Error-Handler
         return next(err);
     }
 });
 
-// Login
+/* ------------------------------------------------------------------
+ *   Login
+ * ------------------------------------------------------------------ */
+
 /**
  * @swagger
  * /api/v1/login:
@@ -146,54 +200,63 @@ authRouter.post('/register', [
  *     responses:
  *       200:
  *         description: Authentication successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
  *       400:
  *         description: Validation error
  *       401:
  *         description: Invalid credentials
  */
-authRouter.post('/login', [
-    body('email')
-        .isEmail()
-        .withMessage('Must be valid email address'),
-    body('password')
-        .notEmpty()
-        .withMessage('Password is required')
-        .escape()
-], async (req, res) => {
+authRouter.post("/login", validateLogin, async (req, res, next) => {
+    // Validierungsfehler prüfen
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        return res.status(400).json({
+            message: "Validation failed",
+            errors: errors.array(),
+        });
     }
 
     const { email, password } = req.body;
-    const user = await User.findOne({ email }).exec();
 
-    if (!user || !( await user.isValidPassword(password))) {
-        return res.status(401).json({ message: 'Invalid credentials '});
-    }
+    try {
+        const user = await User.findOne({ email }).exec();
 
-    const payload = { id: user.id, email: user.email, isAdmin: user.isAdmin };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+        // User nicht gefunden oder Passwort falsch
+        if (!user || !(await user.isValidPassword(password))) {
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
 
-    res.json({
-        token,
-        user: {
+        if (!process.env.JWT_SECRET) {
+            console.error("JWT_SECRET is not set");
+            return res
+                .status(500)
+                .json({ message: "Server misconfiguration: JWT_SECRET missing" });
+        }
+
+        const payload = {
             id: user._id,
-            username: user.username,
-            first_name: user.first_name,
-            family_name: user.family_name,
             email: user.email,
             isAdmin: user.isAdmin,
-            isAuthor: user.isAuthor
-        }
-    });
-})
+        };
+
+        const token = jwt.sign(payload, process.env.JWT_SECRET, {
+            expiresIn: "1h",
+        });
+
+        return res.json({
+            token,
+            user: {
+                id: user._id,
+                username: user.username,
+                first_name: user.first_name,
+                family_name: user.family_name,
+                email: user.email,
+                isAdmin: user.isAdmin,
+                isAuthor: user.isAuthor,
+            },
+        });
+    } catch (err) {
+        return next(err);
+    }
+});
 
 module.exports = authRouter;
